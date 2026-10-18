@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Video Controller 設定</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <img src="../icons/icon-128.png" alt="" width="44" height="44">
+      <div>
+        <h1>Video Controller 設定</h1>
+        <p class="sub">設定會自動儲存。倍速、音量、單聲道本身不會被記住，重新整理或換影片後回到預設值。</p>
+      </div>
+    </header>
+
+    <section>
+      <h2>控制介面</h2>
+      <div class="modes" role="radiogroup" aria-label="控制介面">
+        <label class="mode">
+          <input type="radio" name="uiMode" value="both">
+          <span class="card">
+            <span class="pic both" aria-hidden="true"><i class="tb"></i><i class="ov"></i></span>
+            <b>兩者都使用</b>
+            <small>工具列面板＋影片浮動面板</small>
+          </span>
+        </label>
+        <label class="mode">
+          <input type="radio" name="uiMode" value="popup">
+          <span class="card">
+            <span class="pic popup" aria-hidden="true"><i class="tb"></i></span>
+            <b>只用工具列面板</b>
+            <small>點 Safari 工具列圖示操作</small>
+          </span>
+        </label>
+        <label class="mode">
+          <input type="radio" name="uiMode" value="overlay">
+          <span class="card">
+            <span class="pic overlay" aria-hidden="true"><i class="ov"></i></span>
+            <b>只用影片浮動面板</b>
+            <small>直接在影片上操作</small>
+          </span>
+        </label>
+      </div>
+    </section>
+
+    <section id="overlaySettings">
+      <h2>影片浮動面板</h2>
+      <div class="field">
+        <div>
+          <div class="name">位置</div>
+          <div class="desc">面板顯示在影片的哪個角落</div>
+        </div>
+        <div class="seg">
+          <label><input type="radio" name="overlayPosition" value="top-left"><span>左上</span></label>
+          <label><input type="radio" name="overlayPosition" value="top-right"><span>右上</span></label>
+        </div>
+      </div>
+      <div class="field">
+        <div>
+          <div class="name">自動隱藏</div>
+          <div class="desc">滑鼠離開影片或靜止 2.5 秒後隱藏；關閉則一直顯示倍速標籤</div>
+        </div>
+        <label class="switch"><input type="checkbox" id="overlayAutoHide"><span></span></label>
+      </div>
+    </section>
+
+    <section>
+      <h2>鍵盤快捷鍵</h2>
+      <div class="field">
+        <div>
+          <div class="name">啟用快捷鍵</div>
+          <div class="desc">只在頁面有影片時生效；在輸入框中打字時自動停用</div>
+        </div>
+        <label class="switch"><input type="checkbox" id="shortcutsEnabled"><span></span></label>
+      </div>
+      <div id="keyTable" class="keys"></div>
+      <div class="field">
+        <div>
+          <div class="name">倍速每次調整</div>
+          <div class="desc">4× 以上固定每次 1×</div>
+        </div>
+        <select id="speedStep">
+          <option value="0.05">0.05×</option>
+          <option value="0.1">0.1×</option>
+          <option value="0.25">0.25×</option>
+          <option value="0.5">0.5×</option>
+        </select>
+      </div>
+      <div class="field">
+        <div>
+          <div class="name">音量每次調整</div>
+        </div>
+        <select id="volumeStep">
+          <option value="5">5%</option>
+          <option value="10">10%</option>
+          <option value="25">25%</option>
+          <option value="50">50%</option>
+        </select>
+      </div>
+    </section>
+
+    <section class="about">
+      <h2>使用須知</h2>
+      <ul>
+        <li>音量超過 100% 與單聲道是透過 Web Audio 處理。若影片來自其他網域且未開放 CORS，Safari 不允許處理它的音訊，此時只能調整倍速。</li>
+        <li>Safari 要求先在網頁上互動一次（例如點一下影片）才能啟用音訊處理。</li>
+        <li>倍速超過約 4× 時，Safari 可能會把聲音靜音，這是瀏覽器本身的行為。</li>
+        <li>使用 Safari 內建的影片全螢幕播放器時無法顯示浮動面板，但快捷鍵與工具列面板仍可使用。</li>
+      </ul>
+      <button id="restoreDefaults" class="secondary">恢復預設設定</button>
+      <span id="saved" class="saved" aria-live="polite"></span>
+    </section>
+  </div>
+
+  <script src="../shared/common.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>

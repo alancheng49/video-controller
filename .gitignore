@@ -1,0 +1,9 @@
+.DS_Store
+
+# 由 scripts/build-xcode.sh 產生的 Xcode 專案與建置結果
+xcode/
+
+# 本機工具設定
+.claude/
+node_modules/
+*.log

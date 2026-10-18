@@ -1,0 +1,110 @@
+:root {
+  --bg: #f5f5f7;
+  --card: #ffffff;
+  --fg: #1d1d1f;
+  --muted: #6e6e73;
+  --line: rgba(0, 0, 0, 0.1);
+  --chip: rgba(0, 0, 0, 0.05);
+  --chip-hover: rgba(0, 0, 0, 0.1);
+  --track: rgba(0, 0, 0, 0.14);
+  --accent: #0a84ff;
+  --danger: #d70015;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1c1c1e;
+    --card: #2c2c2e;
+    --fg: #f5f5f7;
+    --muted: #a1a1a6;
+    --line: rgba(255, 255, 255, 0.1);
+    --chip: rgba(255, 255, 255, 0.07);
+    --chip-hover: rgba(255, 255, 255, 0.14);
+    --track: rgba(255, 255, 255, 0.2);
+    --danger: #ff6961;
+  }
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 14px/1.5 -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang TC", system-ui, sans-serif;
+}
+button, select { font: inherit; color: inherit; }
+.wrap { max-width: 680px; margin: 0 auto; padding: 40px 16px 64px; }
+
+header { display: flex; gap: 14px; align-items: center; margin-bottom: 28px; }
+h1 { font-size: 24px; margin: 0; letter-spacing: -0.01em; }
+.sub { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+
+section { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; margin-bottom: 16px; }
+h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin: 0 0 12px; font-weight: 600; }
+section.dim { opacity: 0.45; pointer-events: none; }
+
+.modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+@media (max-width: 560px) { .modes { grid-template-columns: 1fr; } }
+.mode input { position: absolute; opacity: 0; pointer-events: none; }
+.mode .card {
+  display: flex; flex-direction: column; gap: 2px; height: 100%; padding: 12px; border-radius: 12px; cursor: pointer;
+  border: 2px solid var(--line); transition: border-color 0.15s, background 0.15s;
+}
+.mode .card:hover { background: var(--chip); }
+.mode input:checked + .card { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); }
+.mode input:focus-visible + .card { outline: 2px solid var(--accent); outline-offset: 2px; }
+.mode small { color: var(--muted); font-size: 12px; }
+
+/* 介面模式示意圖 */
+.pic { position: relative; height: 64px; border-radius: 8px; margin-bottom: 8px; background: var(--chip); border: 1px solid var(--line); overflow: hidden; }
+.pic::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 12px; background: var(--chip-hover); }
+.pic::after { content: ""; position: absolute; left: 10px; right: 10px; top: 20px; bottom: 8px; border-radius: 4px; background: #1d1d1f; opacity: 0.85; }
+.pic .tb { position: absolute; right: 6px; top: 3px; width: 6px; height: 6px; border-radius: 2px; background: var(--accent); z-index: 2; }
+.pic .tb::after { content: ""; position: absolute; right: -2px; top: 9px; width: 34px; height: 30px; border-radius: 4px; background: var(--card); border: 1px solid var(--line); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2); }
+.pic .ov { position: absolute; left: 14px; top: 24px; width: 20px; height: 8px; border-radius: 4px; background: var(--accent); z-index: 1; }
+
+.field { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 10px 0; border-top: 1px solid var(--line); }
+section > h2 + .field, section > h2 + .modes { border-top: 0; }
+section > h2 + .field { padding-top: 0; }
+.name { font-weight: 550; }
+.desc { color: var(--muted); font-size: 12px; }
+
+.seg { display: inline-flex; background: var(--chip); border-radius: 8px; padding: 2px; }
+.seg input { position: absolute; opacity: 0; pointer-events: none; }
+.seg span { display: block; padding: 4px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+.seg input:checked + span { background: var(--card); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15); font-weight: 600; }
+.seg input:focus-visible + span { outline: 2px solid var(--accent); }
+
+.switch { position: relative; width: 42px; height: 25px; flex: none; cursor: pointer; }
+.switch input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+.switch span { position: absolute; inset: 0; border-radius: 13px; background: var(--track); transition: background 0.15s; pointer-events: none; }
+.switch span::after {
+  content: ""; position: absolute; top: 2px; left: 2px; width: 21px; height: 21px; border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3); transition: transform 0.15s;
+}
+.switch input:checked + span { background: var(--accent); }
+.switch input:checked + span::after { transform: translateX(17px); }
+.switch input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+select { padding: 4px 8px; border-radius: 7px; border: 1px solid var(--line); background: var(--card); }
+
+.keys { display: grid; grid-template-columns: 1fr auto auto; gap: 6px 10px; align-items: center; padding: 10px 0 12px; border-top: 1px solid var(--line); }
+.keys.dim { opacity: 0.45; pointer-events: none; }
+.keys .act { font-size: 13px; }
+.keys .warn { grid-column: 1 / -1; color: var(--danger); font-size: 12px; margin-top: -4px; }
+.key-btn {
+  min-width: 96px; padding: 4px 10px; border-radius: 7px; cursor: pointer; text-align: center;
+  border: 1px solid var(--line); background: var(--chip);
+  font: 600 13px/1.4 ui-monospace, "SF Mono", Menlo, monospace;
+}
+.key-btn:hover { background: var(--chip-hover); }
+.key-btn.recording { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); font-family: inherit; font-weight: 500; }
+.key-btn.conflict { border-color: var(--danger); color: var(--danger); }
+.clear-btn { border: 0; background: transparent; color: var(--muted); cursor: pointer; padding: 4px 6px; border-radius: 6px; }
+.clear-btn:hover { background: var(--chip-hover); color: var(--fg); }
+
+.about ul { margin: 0 0 14px; padding-left: 18px; color: var(--muted); font-size: 13px; }
+.about li + li { margin-top: 4px; }
+.secondary { border: 1px solid var(--line); background: var(--card); border-radius: 8px; padding: 6px 14px; cursor: pointer; }
+.secondary:hover { background: var(--chip-hover); }
+.saved { margin-left: 10px; color: var(--muted); font-size: 12px; }

@@ -1,0 +1,40 @@
+{
+  "manifest_version": 3,
+  "name": "Video Controller",
+  "short_name": "VideoCtrl",
+  "version": "1.0.0",
+  "description": "控制網頁影片的倍速（最高 16x）、音量（最高 400%）與立體聲轉單聲道。",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "96": "icons/icon-96.png",
+    "128": "icons/icon-128.png",
+    "256": "icons/icon-256.png",
+    "512": "icons/icon-512.png"
+  },
+  "action": {
+    "default_title": "Video Controller",
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/toolbar-16.png",
+      "19": "icons/toolbar-19.png",
+      "32": "icons/toolbar-32.png",
+      "38": "icons/toolbar-38.png"
+    }
+  },
+  "options_ui": {
+    "page": "options/options.html",
+    "open_in_tab": true
+  },
+  "permissions": ["storage"],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["shared/common.js", "content.js"],
+      "run_at": "document_start",
+      "all_frames": true,
+      "match_about_blank": true
+    }
+  ]
+}

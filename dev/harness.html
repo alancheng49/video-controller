@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <title>Video Controller 測試頁</title>
+  <style>
+    body { margin: 0; padding: 24px; font: 14px -apple-system, system-ui, sans-serif; background: #e9e9ee; display: flex; gap: 24px; align-items: flex-start; }
+    .player { position: relative; flex: 1; max-width: 860px; }
+    video { width: 100%; display: block; background: #000; border-radius: 10px; }
+    iframe { width: 344px; height: 600px; border: 0; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,.2); background: #f5f5f7; }
+    pre { font-size: 12px; background: #fff; padding: 10px; border-radius: 8px; }
+  </style>
+  <script>
+    // 記錄 content script 建立的音訊節點，方便驗證
+    window.__vcNodes = [];
+    const origGain = AudioContext.prototype.createGain;
+    AudioContext.prototype.createGain = function () {
+      const n = origGain.call(this);
+      window.__vcNodes.push(n);
+      return n;
+    };
+  </script>
+  <script src="/dev/shim.js"></script>
+  <script src="/extension/shared/common.js"></script>
+  <script src="/extension/content.js"></script>
+</head>
+<body>
+  <div class="player">
+    <video id="v" src="/dev/test-left-only.mp4" controls loop playsinline></video>
+    <p>測試影片：只有左聲道有 440Hz 聲音。開啟單聲道後左右耳應該都聽得到。</p>
+    <input placeholder="在這裡打字時快捷鍵應該停用">
+  </div>
+  <iframe src="/extension/popup/popup.html" title="popup"></iframe>
+  <script>
+    // ?mse=1：改用 MSE 串流播放，模擬 YouTube 這類網站
+    if (new URLSearchParams(location.search).has('mse')) {
+      (async () => {
+        const v = document.getElementById('v');
+        const MS = window.ManagedMediaSource || window.MediaSource;
+        const ms = new MS();
+        if (window.ManagedMediaSource) v.disableRemotePlayback = true;
+        v.removeAttribute('src');
+        v.src = URL.createObjectURL(ms);
+        await new Promise((r) => ms.addEventListener('sourceopen', r, { once: true }));
+        const sb = ms.addSourceBuffer('video/mp4; codecs="avc1.640020, mp4a.40.2"');
+        sb.appendBuffer(await (await fetch('/dev/test-frag.mp4')).arrayBuffer());
+        await new Promise((r) => sb.addEventListener('updateend', r, { once: true }));
+        ms.endOfStream();
+      })();
+    }
+  </script>
+</body>
+</html>

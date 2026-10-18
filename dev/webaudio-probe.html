@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <title>Web Audio 相容性測試</title>
+  <style>
+    body { font: 14px -apple-system, system-ui, sans-serif; padding: 20px; }
+    video { width: 240px; background: #000; }
+    pre { background: #f2f2f2; padding: 10px; }
+  </style>
+</head>
+<body>
+  <p>測試 Safari 能否把不同來源的影片聲音接進 Web Audio（音量放大／單聲道都依賴這個）。</p>
+  <button id="go">開始測試</button>
+  <div><video id="file" playsinline></video><video id="mse" playsinline></video></div>
+  <pre id="out"></pre>
+  <script>
+    const out = document.getElementById('out');
+    const log = (s) => (out.textContent += s + '\n');
+
+    async function setupMse(v) {
+      const ms = new (window.ManagedMediaSource || window.MediaSource)();
+      if (window.ManagedMediaSource) v.disableRemotePlayback = true;
+      v.src = URL.createObjectURL(ms);
+      await new Promise((r) => ms.addEventListener('sourceopen', r, { once: true }));
+      const sb = ms.addSourceBuffer('video/mp4; codecs="avc1.640020, mp4a.40.2"');
+      const buf = await (await fetch('/dev/test-frag.mp4')).arrayBuffer();
+      sb.appendBuffer(buf);
+      await new Promise((r) => sb.addEventListener('updateend', r, { once: true }));
+      ms.endOfStream();
+    }
+
+    async function probe(ctx, v, label) {
+      const src = ctx.createMediaElementSource(v);
+      const an = ctx.createAnalyser();
+      an.fftSize = 2048;
+      const g = ctx.createGain();
+      g.gain.value = 0.05;
+      src.connect(an);
+      an.connect(g).connect(ctx.destination);
+      await v.play();
+      const data = new Float32Array(an.fftSize);
+      let peak = 0;
+      for (let i = 0; i < 20; i++) {
+        await new Promise((r) => setTimeout(r, 100));
+        an.getFloatTimeDomainData(data);
+        for (const x of data) peak = Math.max(peak, Math.abs(x));
+      }
+      v.pause();
+      log(`${label}: currentSrc=${v.currentSrc.slice(0, 30)} playing t=${v.currentTime.toFixed(2)} 峰值=${peak.toFixed(4)} → ${peak > 0.01 ? '可以處理' : '收不到聲音'}`);
+      return peak;
+    }
+
+    window.runProbe = async () => {
+      const ctx = new AudioContext();
+      await ctx.resume();
+      log('AudioContext: ' + ctx.state + '  UA: ' + navigator.userAgent);
+      const f = document.getElementById('file');
+      f.src = '/dev/test-left-only.mp4';
+      const m = document.getElementById('mse');
+      await setupMse(m);
+      const a = await probe(ctx, f, '一般檔案');
+      const b = await probe(ctx, m, (window.ManagedMediaSource ? 'ManagedMediaSource' : 'MediaSource') + ' 串流');
+      return { ctx: ctx.state, file: a, mse: b };
+    };
+    document.getElementById('go').onclick = () => window.runProbe().catch((e) => log('錯誤：' + e));
+  </script>
+</body>
+</html>
