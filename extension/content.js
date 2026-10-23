@@ -388,7 +388,7 @@
   }
 
   function actionFor(e) {
-    if (!settings.shortcutsEnabled || isEditableTarget(e) || !hasMedia()) return null;
+    if (!settings.shortcutsEnabled || isEditableTarget(e) || overlay.isEditing() || !hasMedia()) return null;
     const combo = VC.comboFromEvent(e);
     for (const [action, key] of Object.entries(settings.keys)) if (key && key === combo) return action;
     return null;
@@ -504,6 +504,16 @@
       .vc.open .body { display: block; }
       .label { display: flex; justify-content: space-between; align-items: baseline; color: var(--muted); font-size: 11px; margin: 2px 0 4px; }
       .label b { color: var(--fg); font-size: 13px; font-variant-numeric: tabular-nums; }
+      .label input.num {
+        all: unset; box-sizing: border-box; width: 5.5em; margin: -2px -5px -2px 0; padding: 1px 5px;
+        border: 1px solid transparent; border-radius: 6px; text-align: right; cursor: text;
+        color: var(--fg); font-size: 13px; font-weight: 650; font-variant-numeric: tabular-nums;
+        -webkit-user-select: text; user-select: text;
+      }
+      .label input.num:hover { background: rgba(255,255,255,.1); }
+      .label input.num:focus { background: rgba(0,0,0,.35); border-color: var(--accent); }
+      .label input.num.invalid { border-color: #ff453a; }
+      .vol.boost .label input.num { color: #ff9f0a; }
       .row { display: flex; align-items: center; gap: 8px; }
       .section + .section { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
       button.icon {
@@ -592,7 +602,7 @@
               <div class="chips">${RATE_CHIPS.map((r) => `<button data-rate="${r}">${r}×</button>`).join('')}</div>
             </div>
             <div class="section vol">
-              <div class="label"><span>音量</span><b class="vol-val">100%</b></div>
+              <div class="label"><span>音量</span><input class="num vol-val" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" aria-label="音量百分比，可直接輸入" title="點一下可直接輸入音量（可超過 400%）"></div>
               <div class="row">
                 <button class="icon" data-act="volDown" title="音量 −">−</button>
                 <input type="range" class="vol-slider" min="0" max="400" step="5">
@@ -613,7 +623,7 @@
       $ = {
         panel: q('.vc'), pill: q('.pill'), pillRate: q('.pill .rate'), pillBoost: q('.tag.vol'), pillMono: q('.tag.mono'),
         rateVal: q('.rate-val'), rateSlider: q('.rate-slider'), chips: [...root.querySelectorAll('.chips button')],
-        volSection: q('.vol'), volVal: q('.vol-val'), volSlider: q('.vol-slider'), mono: q('.mono-toggle'), notice: q('.notice'),
+        volSection: q('.section.vol'), volVal: q('.vol-val'), volSlider: q('.vol-slider'), mono: q('.mono-toggle'), notice: q('.notice'),
       };
 
       // 不讓點擊穿透到網頁（例如點面板時影片被暫停）
@@ -631,7 +641,7 @@
         hoverPanel = false;
         clearTimeout(closeTimer);
         closeTimer = setTimeout(() => {
-          if (!hoverPanel && !dragging) {
+          if (!hoverPanel && !dragging && !isEditing()) {
             open = false;
             update();
           }
@@ -650,6 +660,41 @@
       $.rateSlider.addEventListener('input', () => setState({ rate: VC.sliderToRate(Number($.rateSlider.value)) }));
       $.volSlider.addEventListener('input', () => setState({ volume: Number($.volSlider.value) / 100 }));
       $.mono.addEventListener('change', () => setState({ mono: $.mono.checked }));
+
+      // 音量數字可直接輸入（例如 250 或 800%），不受滑桿 400% 的限制
+      const commitVolume = () => {
+        const v = VC.parseVolumeInput($.volVal.value);
+        $.volVal.classList.toggle('invalid', v == null);
+        if (v != null && Math.abs(v - currentVolume()) > 0.001) setState({ volume: v });
+        $.volVal.value = VC.formatVolume(v ?? currentVolume());
+      };
+      // 點進輸入框時全選；Safari 放開滑鼠時會取消選取，所以擋掉那次 mouseup
+      let selectOnMouseUp = false;
+      $.volVal.addEventListener('focus', () => {
+        $.volVal.classList.remove('invalid');
+        $.volVal.select();
+        selectOnMouseUp = true;
+      });
+      $.volVal.addEventListener('mouseup', (e) => {
+        if (selectOnMouseUp) e.preventDefault();
+        selectOnMouseUp = false;
+      });
+      $.volVal.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          $.volVal.blur();
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          $.volVal.value = VC.formatVolume(currentVolume());
+          $.volVal.blur();
+        }
+      });
+      $.volVal.addEventListener('blur', () => {
+        commitVolume();
+        if (!hoverPanel) open = false; // 打完字後滑鼠已不在面板上 → 收起
+        update();
+      });
+
       for (const s of [$.rateSlider, $.volSlider]) {
         s.addEventListener('pointerdown', () => (dragging = true));
         s.addEventListener('pointerup', () => (dragging = false));
@@ -688,12 +733,12 @@
       $.pillBoost.textContent = VC.formatVolume(vol);
       $.pillMono.hidden = !state.mono;
       $.rateVal.textContent = VC.formatRate(r);
-      $.volVal.textContent = VC.formatVolume(vol);
+      if (!isEditing()) $.volVal.value = VC.formatVolume(vol);
       $.volSection.classList.toggle('boost', vol > 1.001);
       if (!dragging) $.rateSlider.value = VC.rateToSlider(r);
       if (!dragging) $.volSlider.value = Math.round(vol * 100);
       $.rateSlider.style.setProperty('--p', VC.rateToSlider(r) * 100 + '%');
-      $.volSlider.style.setProperty('--p', (vol / VC.LIMITS.volumeMax) * 100 + '%');
+      $.volSlider.style.setProperty('--p', VC.volumeSliderPercent(vol));
       $.mono.checked = state.mono;
       for (const b of $.chips) b.classList.toggle('on', Math.abs(Number(b.dataset.rate) - r) < 0.001);
       const text = notice && NOTICE_TEXT[notice];
@@ -705,9 +750,11 @@
       return document.fullscreenElement || document.webkitFullscreenElement || null;
     }
 
+    const isEditing = () => !!root && root.activeElement === $.volVal;
+
     function visible() {
       if (!enabled() || !target) return false;
-      if (open || hoverPanel || dragging || !settings.overlayAutoHide) return true;
+      if (open || hoverPanel || dragging || isEditing() || !settings.overlayAutoHide) return true;
       if (now() < flashUntil) return true;
       return now() - lastMoveInVideo < 2500;
     }
@@ -798,6 +845,7 @@
     return {
       refresh: update,
       render,
+      isEditing,
       flash() {
         flashUntil = now() + 1500;
         update();

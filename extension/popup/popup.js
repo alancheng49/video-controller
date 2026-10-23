@@ -84,13 +84,13 @@
   function render() {
     const { rate, volume, mono } = state;
     els.rateVal.textContent = VC.formatRate(rate);
-    els.volVal.textContent = VC.formatVolume(volume);
+    if (document.activeElement !== els.volVal) els.volVal.value = VC.formatVolume(volume);
     if (!dragging) {
       els.rate.value = VC.rateToSlider(rate);
       els.volume.value = Math.round(volume * 100);
     }
     els.rate.style.setProperty('--p', VC.rateToSlider(rate) * 100 + '%');
-    els.volume.style.setProperty('--p', (volume / VC.LIMITS.volumeMax) * 100 + '%');
+    els.volume.style.setProperty('--p', VC.volumeSliderPercent(volume));
     els.volSection.classList.toggle('boost', volume > 1.001);
     els.mono.checked = mono;
     for (const b of document.querySelectorAll('[data-rate]')) b.classList.toggle('on', Math.abs(Number(b.dataset.rate) - rate) < 0.001);
@@ -109,7 +109,7 @@
       b.style.left = VC.rateToSlider(Number(b.dataset.rate)) * 100 + '%';
     }
     for (const b of document.querySelectorAll('.vol-ticks button')) {
-      b.style.left = (Number(b.dataset.volume) / (VC.LIMITS.volumeMax * 100)) * 100 + '%';
+      b.style.left = VC.volumeSliderPercent(Number(b.dataset.volume) / 100);
     }
   }
 
@@ -154,6 +154,45 @@
     act(e.deltaY < 0 ? 'volUp' : 'volDown');
   }, { passive: false });
   els.mono.addEventListener('change', () => command({ mono: els.mono.checked }));
+
+  // 音量數字可直接輸入（例如 250 或 800%），不受滑桿 400% 的限制
+  function commitVolumeInput() {
+    const v = VC.parseVolumeInput(els.volVal.value);
+    if (v == null) {
+      els.volVal.classList.remove('invalid');
+      void els.volVal.offsetWidth; // 重新觸發動畫
+      els.volVal.classList.add('invalid');
+      setTimeout(() => els.volVal.classList.remove('invalid'), 1500);
+      els.volVal.value = VC.formatVolume(state.volume);
+      return;
+    }
+    els.volVal.classList.remove('invalid');
+    if (Math.abs(v - state.volume) > 0.001) command({ volume: v });
+    els.volVal.value = VC.formatVolume(v);
+  }
+  // 點進輸入框時全選，方便直接打新數字（Safari 放開滑鼠時會取消選取，所以要擋掉那次 mouseup）
+  let selectOnMouseUp = false;
+  els.volVal.addEventListener('focus', () => {
+    els.volVal.classList.remove('invalid');
+    els.volVal.select();
+    selectOnMouseUp = true;
+  });
+  els.volVal.addEventListener('mouseup', (e) => {
+    if (selectOnMouseUp) e.preventDefault();
+    selectOnMouseUp = false;
+  });
+  els.volVal.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      els.volVal.blur(); // blur 時會套用
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation(); // 不要關閉 popup
+      els.volVal.value = VC.formatVolume(state.volume);
+      els.volVal.blur();
+    }
+  });
+  els.volVal.addEventListener('blur', commitVolumeInput);
   $('resetAll').addEventListener('click', async () => {
     state = { ...VC.DEFAULT_STATE };
     render();

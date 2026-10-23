@@ -8,7 +8,8 @@
     rateMin: 0.1,
     rateMax: 16,
     volumeMin: 0,
-    volumeMax: 4, // 400%
+    volumeMax: Infinity, // 音量沒有上限（超過滑桿範圍時用輸入框設定）
+    volumeSliderMax: 4, // 滑桿最多拉到 400%
   };
 
   const DEFAULT_STATE = { rate: 1, volume: 1, mono: false };
@@ -83,6 +84,17 @@
   }
   const formatVolume = (v) => Math.round(v * 100) + '%';
 
+  // 解析使用者輸入的音量，例如「250」「250%」；無效時回傳 null
+  function parseVolumeInput(text) {
+    const m = String(text).trim().replace(/[%％\s]/g, '').match(/^\d+(\.\d+)?$/);
+    if (!m) return null;
+    const v = Number(m[0]) / 100;
+    return Number.isFinite(v) ? clampVolume(v) : null;
+  }
+
+  // 滑桿填色位置（超過滑桿上限時停在最右邊）
+  const volumeSliderPercent = (v) => Math.min(v / LIMITS.volumeSliderMax, 1) * 100 + '%';
+
   // 'Shift+KeyD' 這類字串 <-> KeyboardEvent
   function comboFromEvent(e) {
     const mods = [];
@@ -137,7 +149,7 @@
   globalThis.VC = {
     api, LIMITS, DEFAULT_STATE, DEFAULT_SETTINGS, ACTIONS, RATE_PRESETS, VOLUME_PRESETS,
     clamp, clampRate, clampVolume, sliderToRate, rateToSlider, stepRate,
-    formatRate, formatVolume, comboFromEvent, formatCombo,
+    formatRate, formatVolume, parseVolumeInput, volumeSliderPercent, comboFromEvent, formatCombo,
     loadSettings, saveSettings, onSettingsChanged, mergeSettings,
   };
 })();

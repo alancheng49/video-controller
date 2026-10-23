@@ -67,7 +67,17 @@ main.disabled section, main.disabled footer { opacity: 0.45; pointer-events: non
 
 .label { display: flex; justify-content: space-between; align-items: baseline; color: var(--muted); font-size: 12px; margin-bottom: 6px; }
 .label output { color: var(--fg); font-size: 20px; font-weight: 650; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
-.vol.boost .label output { color: var(--orange); }
+.num-input {
+  width: 5.2em; margin: -3px -6px -3px 0; padding: 1px 6px; text-align: right;
+  border: 1px solid transparent; border-radius: 7px; background: transparent; outline: none;
+  color: var(--fg); font-family: inherit; font-size: 20px; font-weight: 650; line-height: 1.2; font-variant-numeric: tabular-nums; letter-spacing: -0.01em;
+  -webkit-user-select: text; user-select: text; cursor: text;
+}
+.num-input:hover { background: var(--chip); }
+.num-input:focus { background: var(--card); border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent); }
+.num-input.invalid { border-color: #ff453a; animation: shake 0.25s; }
+@keyframes shake { 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
+.vol.boost .label output, .vol.boost .num-input { color: var(--orange); }
 
 .row { display: flex; align-items: center; gap: 8px; }
 .step {
